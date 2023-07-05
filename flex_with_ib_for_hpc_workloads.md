@@ -8,59 +8,87 @@ In the world of high-performance computing (HPC), scaling out clusters to meet d
 
 To begin, let's outline the steps involved in setting up the environment for our CycleCloud SLURM cluster. These steps ensure you have a working CycleCloud VM host before setting up a cluster to leverage InfiniBand with VMSS Flexible.
 
+The variables include:
+
+```shell
+set -e
+
+RG=$1
+LOCATION=$2
+SUBSCRIPTION="REPLACE_WITH_AZURE_SUBSCRIPTION_ID"
+IMAGE="azurecyclecloud:azure-cyclecloud:cyclecloud8:latest"
+SKU="REPLACE_WITH_AZURE_VM_SIZE"
+HOST_VM_NAME="$RG-host-vm"
+VMSS_NAME="$RG-flex-vmss"
+STORAGE_ACCOUNT="ccstoragelocker"
+```
+
+For CycleCloud cluster deployment environment to be up and running, you need the entire script to run successfully. Hence, `set -e` ensures that the script exit whenever any of the commands fail.
+
+Optionally, you can add control flow statements *prior to the variables declaration block* to check whether the first (`$1`) and second (`$2`) arguments have been omitted.
+
+```shell
+if [ -z "$1" ]; then
+  echo "Please provide the resource group name as the first argument."
+  exit 1
+fi
+
+if [ -z "$2" ]; then
+  echo "Please provide the location as the second argument."
+  exit 1
+fi
+```
+
 ### CycleCloud Host VM Deployment Steps
 
 1. Creation of the Resource Group: The resource group will host the host VM, the VMSS, and all the shared resources (e.g., network, storage, etc.).
 
-```bash {highlight bash linenos}
+```bash
 az group create \
     -n $RG \
     -l $LOCATION \
     --subscription $SUBSCRIPTION
 ```
 
-2. Provisioning the Virtual Network: Establish a virtual network to facilitate network connectivity for your CycleCloud cluster.
+2. Provisioning the Virtual Network: This will facilitate network connectivity for your CycleCloud cluster.
 
 ```bash
 az network vnet create \
-    --name "$RG-vnet" \
+    --name $RG-vnet \
     --address-prefixes "10.0.0.0/16" \
-    --resource-group $RG \
-    --subscription $SUBSCRIPTION
+    --resource-group $RG
 ```
 
-3. Adding a Subnet to the Virtual Network: Allocate IP addresses by adding a default subnet to the virtual network.
+3. Adding a Subnet to the Virtual Network: The default subnet will help with IP address allocation for the host VM and subsequent nodes in the CycleCloud cluster.
 
 ```bash
 az network vnet subnet create \
   --address-prefixes "10.0.0.0/22" \
   --name "default" \
-  --vnet-name "$RG-vnet" \
-  --resource-group $RG \
-  --subscription $SUBSCRIPTION
+  --vnet-name $RG-vnet \
+  --resource-group $RG
 ```
 
-4. Creating the CycleCloud Host VM: Set up the CycleCloud host VM, which serves as the control node for the cluster.
+4. Creating the CycleCloud Host VM: Set up the CycleCloud host VM, which serves as the control or management node for the cluster.
 
 ```bash
 az vm create \
-  -n "$HOST_VM_NAME" \
+  -n $HOST_VM_NAME \
   -g $RG \
-  --image "$IMAGE" \
+  --image $IMAGE \
   --public-ip-sku Standard \
   --size $SKU \
-  --admin-username azureuser \
-  --ssh-key-values "/path/to/id_rsa.pub" \
-  --vnet-name "$RG-vnet" \
+  --admin-username "azureuser" \
+  --ssh-key-value "/path/to/.ssh/id_rsa.pub" \
+  --vnet-name $RG-vnet \
   --subnet "default" \
   --assign-identity \
   --plan-name "cyclecloud8" \
   --plan-publisher "azurecyclecloud" \
-  --plan-product "azure-cyclecloud" \
-  --subscription $SUBSCRIPTION
+  --plan-product "azure-cyclecloud"
 ```
 
-5. Configuring the Empty VMSS Flex: Configure an empty VMSS Flex with specific settings to leverage the new control plane stack effectively. Ensure InfiniBand connectivity and take note of the VMSS ID for later use.
+5. Deploying an Empty VMSS Flex: The CycleCloud cluster will later scale out from within this VMSS using RDMA-enabled VM sizes to ensure InfiniBand connectivity between the nodes.
 
 ```bash
 az vmss create \
@@ -68,23 +96,38 @@ az vmss create \
   -g $RG \
   --platform-fault-domain-count 1 \
   --orchestration-mode Flexible \
-  --single-placement-group false \
-  --subscription $SUBSCRIPTIO
+  --single-placement-group false
 ```
 
-6. Assigning Contributor Role to the Managed Identity: Grant necessary permissions by assigning the contributor role to the managed identity of the CycleCloud host VM.
+6. Assigning Contributor Role to the host VM Managed Identity: This grants the necessary permissions allowing the control node to create compute nodes and associated resources.
 
 ```bash
-az role assignment create --assignee-principal-type ServicePrincipal \
-                          --assignee-object-id $hostVMPrincipalID \
-                          --role "Contributor" \
-                          --scope "/subscriptions/$SUBSCRIPTION" \
-                          --subscription $SUBSCRIPTION
+# Get Host VM Principal ID
+hostVMPrincipalID=$(az vm show \
+                          -g $RG \
+                          -n "$HOST_VM_NAME" \
+                          --query "identity.principalId" \
+                          -o tsv)
+
+# Assign contributor role to the host VM
+az role assignment create \
+    --assignee-principal-type ServicePrincipal \
+    --assignee-object-id $hostVMPrincipalID \
+    --role "Contributor" \
+    --scope "/subscriptions/$SUBSCRIPTION"   
 ```
 
 7. Setting Network Security Group Rules: Enable web access to CycleCloud through the WebUI by defining network security group rules.
 
 ```bash
+
+# Get the NSG Name
+nsgName=$(az network nsg list  \
+                -g $RG \
+                --query '[0].name' \
+                -o json | jq -r '.')
+
+# Set NSG Rule to Allow Web Requests
 az network nsg rule create \
          --nsg-name $nsgName  \
          -g $RG \
@@ -95,20 +138,62 @@ az network nsg rule create \
          --priority 107
 ```
 
-8. Creating the Storage Account: Establish a storage account that will serve as the CycleCloud storage locker, ensuring data persistence and accessibility.
+8. Creating the Storage Account: Establish a storage account that will serve as the CycleCloud storage locker, ensuring data persistence and accessibility across the nodes in the cluster.
 
 ```bash
-az storage account create -n $STORAGE_ACCOUNT \
-                          -g $RG \
-                          --sku Standard_LRS
+az storage account create \
+        -n $STORAGE_ACCOUNT \
+        -g $RG \
+        --sku Standard_LRS
 ```
 
 ### Accessing the Host VM Securely through Bastion Service
 
-To ensure secure access to the CycleCloud host VM terminal, we'll deploy a bastion service. This service enables convenient and protected management of the HPC environment.
+To ensure secure access to the CycleCloud host VM terminal, we'll deploy a bastion service. This service enables convenient and protected SSH connectivity to the host VM, without the need for a public IP address or VPN connection.
 
-9. Deploying the Bastion Service: Deploy a working bastion service, which allows secure access to the CycleCloud host VM terminal.
-10. Connecting to Bastion from the CLI: Establish a connection to the bastion service from the command-line interface (CLI) to gain access to the CycleCloud host VM terminal securely.
+```bash
+# Create bastion public IP
+az network public-ip create \
+  --name $RG-bastion-public-ip \
+  --resource-group $RG \
+  --sku Standard \
+  --allocation-method Static
+
+# Create bastion subnet
+az network vnet subnet create \
+  --address-prefixes "10.0.4.0/24" \
+  --name "AzureBastionSubnet" \
+  --vnet-name $RG-vnet \
+  --resource-group $RG
+
+# Deploy bastion
+az network bastion create \
+  --name $RG-bastion \
+  --public-ip-address $RG-bastion-public-ip \
+  --resource-group $RG \
+  --vnet-name $RG-vnet \
+  --enable-tunneling true
+```
+
+At this stage, you are ready to connect to the CycleCloud host VM using bastion. The command below utilizes the `az network bastion ssh` command to establish an SSH connection to the host VM within the specified resource group (`$RG`) using Azure Bastion. It authenticates with an SSH key by pointing to the location of the private key associated with the public key used when creating CycleCloud host VM and using the username `azureuser`.
+
+```bash
+# Get the host VM resource ID
+cc_host_vm_id=$(az vm show \
+                    --name $HOST_VM_NAME \
+                    -g $RG \
+                    --query 'id' \
+                    -o json | jq -r '.')
+
+# SSH into the VM
+az network bastion ssh \
+  --name $RG-bastion \
+  --resource-group $RG \
+  --target-resource-id $cc_host_vm_id \
+  --auth-type ssh-key \
+  --username azureuser \
+  --ssh-key "/path/to/.ssh/id_rsa.pem"
+```
 
 ## Installing and Configuring CycleCloud
 
