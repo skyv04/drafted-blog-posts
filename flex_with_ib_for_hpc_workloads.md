@@ -12,7 +12,7 @@ To begin, let's outline the steps involved in setting up the environment for our
 
 1. Creation of the Resource Group: The resource group will host the host VM, the VMSS, and all the shared resources (e.g., network, storage, etc.).
 
-```bash {linenos=table}
+```bash {highlight bash linenos}
 az group create \
     -n $RG \
     -l $LOCATION \
