@@ -1,4 +1,4 @@
-# Scaling Out CycleCloud SLURM Cluster with InfiniBand on Azure VMSS Flex: Empowering High-Performance Computing Workflows
+# High-Scale HPC Workloads on Azure: Scaling Out CycleCloud Cluster to Land on Azure VMSS Flexible with InfiniBand
 
 ## Introduction
 
