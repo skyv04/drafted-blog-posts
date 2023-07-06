@@ -41,112 +41,110 @@ fi
 
 ### CycleCloud Host VM Deployment Steps
 
-<ol>
-<li> Creation of the Resource Group: The resource group will contain the host VM, the VMSS, and all the shared resources (e.g., network, storage, etc.). </li>
+1. Creation of the Resource Group: The resource group will include the host VM, the VMSS, and all the shared resources (e.g., network, storage, etc.).
 
-```bash
-az group create \
-    -n $RG \
-    -l $LOCATION \
-    --subscription $SUBSCRIPTION
-```
+  ```bash
+  az group create \
+      -n $RG \
+      -l $LOCATION \
+      --subscription $SUBSCRIPTION
+  ```
 
-<li>Provisioning the Virtual Network: This will facilitate network connectivity for your CycleCloud cluster.</li>
+2. Provisioning the Virtual Network: This will facilitate network connectivity for your CycleCloud cluster.
 
-```bash
-az network vnet create \
-    --name $RG-vnet \
-    --address-prefixes "10.0.0.0/16" \
+  ```bash
+  az network vnet create \
+      --name $RG-vnet \
+      --address-prefixes "10.0.0.0/16" \
+      --resource-group $RG
+  ```
+
+3. Adding a Subnet to the Virtual Network: The default subnet will help with IP address allocation for the host VM and subsequent nodes in the CycleCloud cluster.
+
+  ```bash
+  az network vnet subnet create \
+    --address-prefixes "10.0.0.0/22" \
+    --name "default" \
+    --vnet-name $RG-vnet \
     --resource-group $RG
-```
+  ```
 
-<li>Adding a Subnet to the Virtual Network: The default subnet will help with IP address allocation for the host VM and subsequent nodes in the CycleCloud cluster.</li>
+4. Creating the CycleCloud Host VM: Set up the CycleCloud host VM, which serves as the control or management node for the cluster.
 
-```bash
-az network vnet subnet create \
-  --address-prefixes "10.0.0.0/22" \
-  --name "default" \
-  --vnet-name $RG-vnet \
-  --resource-group $RG
-```
+  ```bash
+  az vm create \
+    -n $HOST_VM_NAME \
+    -g $RG \
+    --image $IMAGE \
+    --public-ip-sku Standard \
+    --size $SKU \
+    --admin-username "azureuser" \
+    --ssh-key-value "/path/to/.ssh/id_rsa.pub" \
+    --vnet-name $RG-vnet \
+    --subnet "default" \
+    --assign-identity \
+    --plan-name "cyclecloud8" \
+    --plan-publisher "azurecyclecloud" \
+    --plan-product "azure-cyclecloud"
+  ```
 
-<li>Creating the CycleCloud Host VM: Set up the CycleCloud host VM, which serves as the control or management node for the cluster.</li>
+5. Deploying an Empty VMSS Flex: The CycleCloud cluster will later scale out from within this VMSS using RDMA-enabled VM sizes to ensure InfiniBand connectivity between the nodes.
 
-```bash
-az vm create \
-  -n $HOST_VM_NAME \
-  -g $RG \
-  --image $IMAGE \
-  --public-ip-sku Standard \
-  --size $SKU \
-  --admin-username "azureuser" \
-  --ssh-key-value "/path/to/.ssh/id_rsa.pub" \
-  --vnet-name $RG-vnet \
-  --subnet "default" \
-  --assign-identity \
-  --plan-name "cyclecloud8" \
-  --plan-publisher "azurecyclecloud" \
-  --plan-product "azure-cyclecloud"
-```
+  ```bash
+  az vmss create \
+    -n "$VMSS_NAME" \
+    -g $RG \
+    --platform-fault-domain-count 1 \
+    --orchestration-mode Flexible \
+    --single-placement-group false
+  ```
 
-<li>Deploying an Empty VMSS Flex: The CycleCloud cluster will later scale out from within this VMSS using RDMA-enabled VM sizes to ensure InfiniBand connectivity between the nodes.</li>
+6. Assigning Contributor Role to the host VM Managed Identity: This grants the necessary permissions allowing the control node to create compute nodes and associated resources.
 
-```bash
-az vmss create \
-  -n "$VMSS_NAME" \
-  -g $RG \
-  --platform-fault-domain-count 1 \
-  --orchestration-mode Flexible \
-  --single-placement-group false
-```
+  ```bash
+  # Get Host VM Principal ID
+  hostVMPrincipalID=$(az vm show \
+                            -g $RG \
+                            -n "$HOST_VM_NAME" \
+                            --query "identity.principalId" \
+                            -o tsv)
 
-<li>Assigning Contributor Role to the host VM Managed Identity: This grants the necessary permissions allowing the control node to create compute nodes and associated resources.</li>
+  # Assign contributor role to the host VM
+  az role assignment create \
+      --assignee-principal-type ServicePrincipal \
+      --assignee-object-id $hostVMPrincipalID \
+      --role "Contributor" \
+      --scope "/subscriptions/$SUBSCRIPTION"   
+  ```
 
-```bash
-# Get Host VM Principal ID
-hostVMPrincipalID=$(az vm show \
-                          -g $RG \
-                          -n "$HOST_VM_NAME" \
-                          --query "identity.principalId" \
-                          -o tsv)
+7. Setting Network Security Group Rules: Enable web access to CycleCloud through the WebUI by defining network security group rules.
 
-# Assign contributor role to the host VM
-az role assignment create \
-    --assignee-principal-type ServicePrincipal \
-    --assignee-object-id $hostVMPrincipalID \
-    --role "Contributor" \
-    --scope "/subscriptions/$SUBSCRIPTION"   
-```
+  ```bash
+  # Get the NSG Name
+  nsgName=$(az network nsg list  \
+                  -g $RG \
+                  --query '[0].name' \
+                  -o json | jq -r '.')
 
-<li>Setting Network Security Group Rules: Enable web access to CycleCloud through the WebUI by defining network security group rules.</li>
+  # Set NSG Rule to Allow Web Requests
+  az network nsg rule create \
+          --nsg-name $nsgName  \
+          -g $RG \
+          -n "allow-web-req" \
+          --destination-port-ranges 80 443 \
+          --access Allow \
+          --protocol Tcp \
+          --priority 107
+  ```
 
-```bash
+8. Creating the Storage Account: Establish a storage account that will serve as the CycleCloud storage locker, ensuring data persistence and accessibility across the nodes in the cluster.
 
-# Get the NSG Name
-nsgName=$(az network nsg list  \
-                -g $RG \
-                --query '[0].name' \
-                -o json | jq -r '.')
-
-# Set NSG Rule to Allow Web Requests
-az network nsg rule create \
-         --nsg-name $nsgName  \
-         -g $RG \
-         -n "allow-web-req" \
-         --destination-port-ranges 80 443 \
-         --access Allow \
-         --protocol Tcp \
-         --priority 107
-```
-
-<li>Creating the Storage Account: Establish a storage account that will serve as the CycleCloud storage locker, ensuring data persistence and accessibility across the nodes in the cluster.</li>
-
-```bash
-az storage account create \
-        -n $STORAGE_ACCOUNT \
-        -g $RG \
-        --sku Standard_LRS
-```
+  ```bash
+  az storage account create \
+          -n $STORAGE_ACCOUNT \
+          -g $RG \
+          --sku Standard_LRS
+  ```
 
 ### Accessing the Host VM Securely through Bastion Service
 
@@ -195,7 +193,7 @@ az network bastion ssh \
   --username azureuser \
   --ssh-key "/path/to/.ssh/id_rsa.pem"
 ```
-</ol>
+
 ## Installing and Configuring CycleCloud
 
 Now that the environment is prepared, we can proceed with installing and configuring CycleCloud on the CycleCloud host VM. This step lays the foundation for managing and scaling HPC workloads effectively.
