@@ -1,4 +1,4 @@
-# Scaling HPC Workloads with Over a Thousand InfiniBand-Connected Nodes: Leveraging Azure CycleCloud and Virtual Machine Scale Set in Flexible Orchestration Mode
+# Leveraging Azure CycleCloud and Virtual Machine Scale Set in Flexible Orchestration Mode to Scale HPC Workloads with Over a Thousand InfiniBand-Connected Nodes
 
 ## Introduction
 
@@ -41,7 +41,8 @@ fi
 
 ### CycleCloud Host VM Deployment Steps
 
-1. Creation of the Resource Group: The resource group will host the host VM, the VMSS, and all the shared resources (e.g., network, storage, etc.).
+<ol>
+<li> Creation of the Resource Group: The resource group will contain the host VM, the VMSS, and all the shared resources (e.g., network, storage, etc.). </li>
 
 ```bash
 az group create \
@@ -50,7 +51,7 @@ az group create \
     --subscription $SUBSCRIPTION
 ```
 
-1. Provisioning the Virtual Network: This will facilitate network connectivity for your CycleCloud cluster.
+<li>Provisioning the Virtual Network: This will facilitate network connectivity for your CycleCloud cluster.</li>
 
 ```bash
 az network vnet create \
@@ -59,7 +60,7 @@ az network vnet create \
     --resource-group $RG
 ```
 
-1. Adding a Subnet to the Virtual Network: The default subnet will help with IP address allocation for the host VM and subsequent nodes in the CycleCloud cluster.
+<li>Adding a Subnet to the Virtual Network: The default subnet will help with IP address allocation for the host VM and subsequent nodes in the CycleCloud cluster.</li>
 
 ```bash
 az network vnet subnet create \
@@ -69,7 +70,7 @@ az network vnet subnet create \
   --resource-group $RG
 ```
 
-1. Creating the CycleCloud Host VM: Set up the CycleCloud host VM, which serves as the control or management node for the cluster.
+<li>Creating the CycleCloud Host VM: Set up the CycleCloud host VM, which serves as the control or management node for the cluster.</li>
 
 ```bash
 az vm create \
@@ -88,7 +89,7 @@ az vm create \
   --plan-product "azure-cyclecloud"
 ```
 
-1. Deploying an Empty VMSS Flex: The CycleCloud cluster will later scale out from within this VMSS using RDMA-enabled VM sizes to ensure InfiniBand connectivity between the nodes.
+<li>Deploying an Empty VMSS Flex: The CycleCloud cluster will later scale out from within this VMSS using RDMA-enabled VM sizes to ensure InfiniBand connectivity between the nodes.</li>
 
 ```bash
 az vmss create \
@@ -99,7 +100,7 @@ az vmss create \
   --single-placement-group false
 ```
 
-1. Assigning Contributor Role to the host VM Managed Identity: This grants the necessary permissions allowing the control node to create compute nodes and associated resources.
+<li>Assigning Contributor Role to the host VM Managed Identity: This grants the necessary permissions allowing the control node to create compute nodes and associated resources.</li>
 
 ```bash
 # Get Host VM Principal ID
@@ -117,7 +118,7 @@ az role assignment create \
     --scope "/subscriptions/$SUBSCRIPTION"   
 ```
 
-1. Setting Network Security Group Rules: Enable web access to CycleCloud through the WebUI by defining network security group rules.
+<li>Setting Network Security Group Rules: Enable web access to CycleCloud through the WebUI by defining network security group rules.</li>
 
 ```bash
 
@@ -138,7 +139,7 @@ az network nsg rule create \
          --priority 107
 ```
 
-1. Creating the Storage Account: Establish a storage account that will serve as the CycleCloud storage locker, ensuring data persistence and accessibility across the nodes in the cluster.
+<li>Creating the Storage Account: Establish a storage account that will serve as the CycleCloud storage locker, ensuring data persistence and accessibility across the nodes in the cluster.</li>
 
 ```bash
 az storage account create \
@@ -194,7 +195,7 @@ az network bastion ssh \
   --username azureuser \
   --ssh-key "/path/to/.ssh/id_rsa.pem"
 ```
-
+</ol>
 ## Installing and Configuring CycleCloud
 
 Now that the environment is prepared, we can proceed with installing and configuring CycleCloud on the CycleCloud host VM. This step lays the foundation for managing and scaling HPC workloads effectively.
