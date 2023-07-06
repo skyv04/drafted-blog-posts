@@ -196,7 +196,7 @@ az network bastion ssh \
 
 ## III. Installing and Configuring CycleCloud
 
-Now that the environment is prepared, we can proceed with installing and configuring CycleCloud on the CycleCloud host VM. This step lays the foundation for managing and scaling HPC workloads effectively.
+Now that the environment is prepared, we can proceed with installing and configuring CycleCloud on the CycleCloud host VM. This step lays the foundation for managing and scaling HPC workloads effectively(-).
 
 11. Installing CycleCloud and Configuring the Account: Utilize the public IP of the CycleCloud host VM to install and configure CycleCloud via the Edge browser. Set up an account using the WebUI.
 
