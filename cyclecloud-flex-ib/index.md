@@ -1,4 +1,4 @@
-# Scaling Out CycleCloud Cluster to Land on Azure VMSS Flexible with InfiniBand
+# Scaling HPC Workloads with Over a Thousand InfiniBand-Connected Nodes: Leveraging Azure CycleCloud and Virtual Machine Scale Set in Flexible Orchestration Mode
 
 ## Introduction
 
