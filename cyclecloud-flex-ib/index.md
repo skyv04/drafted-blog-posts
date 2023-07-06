@@ -1,10 +1,10 @@
 # Leveraging Azure CycleCloud and Virtual Machine Scale Set in Flexible Orchestration Mode to Scale HPC Workloads with Over a Thousand InfiniBand-Connected Nodes
 
-## Introduction
+## I. Introduction
 
 In the world of high-performance computing (HPC), scaling out clusters to meet demanding computational needs is a crucial aspect. Azure CycleCloud, a cloud-based HPC management solution, provides a powerful platform for orchestrating and scaling HPC workloads. In this blog post, we will explore how to scale out a CycleCloud SLURM cluster on Azure VMSS Flex, leveraging InfiniBand connectivity. This configuration not only enhances scalability but also improves deployment performance and reliability, making it an ideal choice for embarrasingly parallel HPC and AI worloads.
 
-## Setting Up the Environment for CycleCloud Cluster
+## II. Setting Up the Environment for CycleCloud Cluster
 
 To begin, let's outline the steps involved in setting up the environment for our CycleCloud SLURM cluster. These steps ensure you have a working CycleCloud VM host before setting up a cluster to leverage InfiniBand with VMSS Flexible.
 
@@ -39,7 +39,7 @@ if [ -z "$2" ]; then
 fi
 ```
 
-### CycleCloud Host VM Deployment Steps
+### II. 1. CycleCloud Host VM Deployment Steps
 
 1 - Creation of the Resource Group: The resource group will include the host VM, the VMSS, and all the shared resources (e.g., network, storage, etc.).
 
@@ -146,7 +146,7 @@ fi
           --sku Standard_LRS
   ```
 
-### Accessing the Host VM Securely through Bastion Service
+### II. 2. Accessing the Host VM Securely through Bastion Service
 
 To ensure secure access to the CycleCloud host VM terminal, we'll deploy a bastion service. This service enables convenient and protected SSH connectivity to the host VM, without the need for a public IP address or VPN connection.
 
@@ -194,7 +194,7 @@ az network bastion ssh \
   --ssh-key "/path/to/.ssh/id_rsa.pem"
 ```
 
-## Installing and Configuring CycleCloud
+## III. Installing and Configuring CycleCloud
 
 Now that the environment is prepared, we can proceed with installing and configuring CycleCloud on the CycleCloud host VM. This step lays the foundation for managing and scaling HPC workloads effectively.
 
