@@ -1,4 +1,4 @@
-# Leveraging Azure CycleCloud and Virtual Machine Scale Set in Flexible Orchestration Mode to Scale HPC Workloads with Over a Thousand InfiniBand-Connected Nodes
+# Leveraging Azure CycleCloud to Scale HPC Workloads with Over a Thousand InfiniBand-Connected Nodes
 
 ## I. Introduction
 
@@ -79,7 +79,7 @@ fi
     --public-ip-sku Standard \
     --size $SKU \
     --admin-username "azureuser" \
-    --ssh-key-value "/path/to/.ssh/id_rsa.pub" \
+    --ssh-key-value "REPLACE_WITH_PUBLIC_KEY_DATA" \
     --vnet-name $RG-vnet \
     --subnet "default" \
     --assign-identity \
@@ -198,38 +198,193 @@ az network bastion ssh \
 
 Now that the environment is prepared, we can proceed with installing and configuring CycleCloud on the CycleCloud host VM. This step lays the foundation for managing and scaling HPC workloads effectively.
 
-11. Installing CycleCloud and Configuring the Account: Utilize the public IP of the CycleCloud host VM to install and configure CycleCloud via the Edge browser. Set up an account using the WebUI.
+1 - Retrieve the public IP of the CycleCloud host VM and install CycleCloud CLI on the host VM:
 
-## Connecting CycleCloud to Azure Resources
+```bash
+az vm show -d \
+      -g $RG \
+      -n $HOST_VM_NAME \
+      --query 'publicIps' \
+      -o json | jq -r '.'
+```
 
-To leverage the power of Azure resources, we'll establish connections between CycleCloud and the necessary components.
+You can substitute the public ip from above in the following command and paste this command on the VM terminal to download the CLI:
 
-12. Adding Storage Account Key to the Config File: Enable access to the storage account by adding the storage account key to the CycleCloud config file.
-13. Setting Up Private Key for Authentication: Generate a private key file and configure it for authentication with the CycleCloud host VM.
+```bash
+wget --no-check-certificate https://<REPLACE_WITH_PUBLIC_IP>/static/tools/cyclecloud-cli.zip
+```
 
-## Scaling Out the SLURM Cluster with VMSS Flex
+Then unzip and install CycleCloud CLI on the host VM:
 
-14. Importing the SLURM Template: Import the SLURM template into CycleCloud, specifying the required parameters such as the CycleCloud subscription, subnet ID, and VMSS Flex ID. This template enables CycleCloud to scale out the SLURM cluster using VMSS Flex.
+```bash
+unzip cyclecloud-cli.zip && sh cyclecloud-cli-installer/install.sh
+```
 
-15. Launching and Monitoring the Cluster: Launch the SLURM cluster and monitor its progress. Verify that the cluster enters the allocation mode, indicating that it's ready for scaling.
+![Landing Page of CycleCloud WebUI](./assets/image1.png "Image 1")
 
-16. Adding Nodes to the Cluster: Use the CycleCloud command-line interface (CLI) to add nodes to the cluster. Specify the desired partition and observe the new nodes starting up and joining the cluster.
 
-## Monitoring and Verifying the Cluster
+2 - Configuring an initial account and initializing CyClecloud:
 
-17. Checking Cluster Status: Monitor the status of the cluster to ensure successful provisioning of the nodes. You can use the Azure portal or the CLI to check the status and verify that all nodes are operational.
+To set up an initial account, you can navigate to the following URL: `https://<REPLACE_WITH_PUBLIC_IP>` from a web browser. This will open up the WebUI and ask to confirm the credential, as shown in Image 1.
 
-18. Finalizing the Configuration: Tailor the cluster configuration based on your specific workload requirements. This could involve custom configurations, software installations, or job scheduling setups. Fine-tune the configuration to maximize the efficiency of your HPC workflows.
+Next, you can set up a account, password, and public key (the one used during the provisioning of the host VM), as per Image 2.
+
+Once you hit done, close (or leave) the browser window.
+
+![Initial User Setup from CycleCloud WebUI](./assets/image2.png "Image 2")
+
+From the host VM terminal, run the command below to initialize CycleCloud:
+
+```bash
+cyclecloud initialize
+```
+
+Follow the prompt, filling out the details as provided in Table 1.
+
+| Prompt                                          | Value                          |
+|-------------------------------------------------|--------------------------------|
+| CycleServer URL:                                | http://localhost               |
+| Detected untrusted certificate.  Allow?:        | yes                            |
+| CycleServer username:[azureuser]                | The username from WebUI        |
+| CycleServer password:                           | Their corresponding password   |
+| Subscription Name:                              | Any custom name^1              |
+| Cloud Environment:                              | public                         |
+| Managed Identity:                               | y                              |
+| Subscription ID:                                | Azure subscription ID          |
+| Default Location:                               | (`$RG`) resource group region  |
+| Azure default region has been set to westus3    |                                |
+| Resource Group:                                 | Value of the `$RG` variable    |
+| Storage Account:                                | Value of `$STORAGE_ACCOUNT`    |
+| Use storage account?                            | y                              |
+| Storage Container:                              | cyclecloud                     |
+| Marketplace Terms:                              | y                              |
+|-------------------------------------------------|--------------------------------|
+
+Table 1: Description of Prompt-Value Pairing During CycleCloud Initialization
+
+
+3 - Adding Storage Account Key to the Config File:
+
+The command below will retrieve the storage account key:
+
+```bash
+az storage account keys list \
+            --account-name $STORAGE_ACCOUNT \
+            -g $RG \
+            --query "[0].value" \
+            -o json | jq -r '.'
+```
+
+You can subsequently replace the storage account name and key in the below configuration excerpt:
+
+```
+[azure]
+storage_account = <REPLACE_WITH_STORAGE_ACCOUNT_NAME>
+storage_account_key = <REPLACE_WITH_STORAGE_KEY>
+```
+
+The above excerpt can thus be pasted in the config file inside of the host VM by executing the command below, or through any other Linux text editing means.
+
+```bash
+vi /home/azureuser/.cycle/config.ini
+```
+
+4 - Setting up the private key for authentication: 
+
+To set up the private key in the host VM, use the key associated with the public key from the initial user setup in the WebUI.
+
+```bash
+# Create a file and paste the private key content
+vi private-key.pem
+
+# Move the file to the .ssh directory
+mv private-key.pem ~/.ssh/cyclecloud.pem 
+
+# Set the appropriate permissions
+chmod 600 ~/.ssh/cyclecloud.pem
+```
+
+5 - Importing the SLURM template to leverage CycleCloud `StandAlone` allocation method:
+
+This will scale out the cluster inside of a Virtual Machine Scale Set (VMSS) in Flexible orchestration mode with InfiniBand connectivity.
+
+Follow the link below to download the template file on your local machine and copy its content over to the host VM.
+
+[Download CycleCloud_FlexIB_SLURM_Template.txt](./assets/CycleCloud_FlexIB_SLURM_Template.txt)
+
+To keep the template minimal, the parameters are in the following separate JSON file:
+
+[Download CycleCloud_FlexIB_SLURM_Parameters.json](./assets/CycleCloud_FlexIB_SLURM_Parameters.json)
+
+
+Alternatively, you could use `wget` to download these files directly on the host VM:
+
+```bash
+# Donwload the template file
+wget ./assets/CycleCloud_FlexIB_SLURM_Template.txt
+
+# Download the parameter file
+wget ./assets/CycleCloud_FlexIB_SLURM_Parameters.json
+```
+
+## IV. Scaling Out the SLURM Cluster within a VMSS Flex with InfiniBand
+
+1 - Importing the SLURM Template: 
+
+```bash
+cyclecloud import_cluster myslurm1  -f CycleCloud_FlexIB_SLURM_Template.txt -c slurm -p CycleCloud_FlexIB_SLURM_Parameters.json
+```
+
+The above command is to be run within the host VM in the directory where the template and parameter files are found.
+
+> :information_source: Before executing the above command, ensure that you modify the parameter file to include all the necessary values. You would replace any missing values that have placeholders starting with `REPLACE_WITH_...` such as the CycleCloud subscription, subnet ID, VMSS Flex ID, etc.
+
+
+2 - Launching the cluster:
+
+```bash
+# Start the cluster
+cyclecloud start_cluster myslurm1 
+
+# Monitor the provisioning status of the head node
+watch cyclecloud show_cluster myslurm1 -l
+
+```
+
+3 - Adding nodes to the cluster: 
+
+```bash
+cyclecloud add_nodes myslurm1 --template htc --count 1000
+```
+
+The above command adds a thousand RDMA-enabled nodes to the SLURM cluster in the HTC partition. You would make sure the number of nodes does not exceed the maximum HTC scale out size that was specified in the parameter file.
+
+4 - Monitoring the status of the cluster:
+
+In case the `watch` command under point (1 -) above was interrupted or does not show a complete list of the newly added nodes, you might need to re-run it to see the full list of nodes and monitor their provisioning status.
+
+You can also use the Azure portal or the CLI to check the status of the VMSS Flex inside of the `$RG` resource group the status of the added nodes.
+
+The above point (3 -) is merely scaling out the cluster without any useful HPC workload. As a remedy, you may skip that command and directly submit a slurm job from the head node:
+
+```bash
+# Connect to the head node from the host VM
+cyclecloud connect <node-name> -c <cluster-name>
+
+# Prepare a batch MPI job specifying the partition as HTC, the number of nodes (as 1000), the script to run, etc. 
+[...]
+
+# Submit the job
+sbatch myjob.sh
+```
+
+This too will scale out the HTC partition to a 1000 InfiniBand-connected nodes. It is also reflective of the actual usage scenario you would commonly encounter.
 
 ## Conclusion
 
-Scaling out a CycleCloud SLURM cluster with InfiniBand connectivity on Azure VMSS Flex provides a robust solution for handling demanding HPC workloads. By leveraging the flexibility of VMSS and the performance benefits of InfiniBand, HPC developers, scientists, and business decision-makers can achieve unprecedented scalability, deployment performance, and reliability.
+Scaling out a CycleCloud SLURM cluster with InfiniBand connectivity using Azure VMSS Flex provides a robust solution for handling demanding HPC workloads. By leveraging the flexibility of VMSS and the performance benefits of InfiniBand, HPC developers, scientists, and technical experts can achieve unprecedented scalability, deployment performance, and reliability.
 
-The combination of CycleCloud's powerful orchestration capabilities, Azure's scalable infrastructure, and InfiniBand's high-speed interconnect technology opens up new possibilities for tackling complex computational tasks efficiently. Whether it's running large-scale simulations, data analytics, or scientific research, this setup empowers users to harness the full potential of their HPC workloads.
+The combination of CycleCloud's powerful orchestration capabilities, Azure's scalable infrastructure, and InfiniBand's high-speed interconnect technology opens up new possibilities for tackling complex computational tasks efficiently. Whether it's running large-scale simulations, data analytics, or scientific research, this setup empowers users to achieve even more than was currently possible for HPC use cases on Azure.
 
-As HPC continues to evolve and demand grows for more computational power, leveraging technologies like CycleCloud, Azure, and InfiniBand becomes increasingly critical. Embracing these advanced solutions can enable organizations to stay at the forefront of scientific research, engineering simulations, and data-driven decision-making.
-
-So, embrace the power of CycleCloud, leverage Azure's scalability, and harness the benefits of InfiniBand connectivity to unlock the full potential of your HPC workflows. Empower your organization to push the boundaries of computational capabilities and accelerate innovation in your field.
-
-Thank you for joining us on this journey to scale out CycleCloud SLURM clusters with InfiniBand on Azure VMSS Flex. Happy computing, and may your HPC endeavors yield remarkable discoveries and breakthroughs!
+As HPC continues to evolve and demand grows for more computational power, leveraging technologies like CycleCloud, Azure, and InfiniBand becomes increasingly critical. Embracing these advanced solutions can enable organizations to stay at the forefront of scientific research, engineering simulations, and data-driven decision-making, with the urge to attain remarkable discoveries and breakthroughs!
 

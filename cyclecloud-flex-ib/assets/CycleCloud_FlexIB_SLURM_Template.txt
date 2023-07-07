@@ -1,0 +1,117 @@
+[cluster Slurm]
+FormLayout = selectionpanel
+Category = Schedulers
+Autoscale = $Autoscale
+    [[node defaults]]
+    UsePublicNetwork = $UsePublicNetwork
+    Credentials = $CycleCloudSubscription
+    Image = $LinuxDistro    
+    SubnetId = $SubnetId
+    Region = $Region
+    KeyPairLocation = $KeyPairLocation
+    ShutdownPolicy = "Terminate"
+    Azure = =[AllocationMethod="StandAlone"]
+    FlexScaleSetId = $FlexScaleSetId
+        [[[configuration]]]
+        slurm.version = $SlurmVersion
+        slurm.accounting.enabled = false
+        cyclecloud.converge_on_boot = true
+        cyclecloud.hosts.standalone_dns.enabled = ${NodeNameIsHostName==false}
+        cyclecloud.hosts.simple_vpc_dns.enabled = ${NodeNameIsHostName==false}
+        cyclecloud.mounts.sched.disabled = true
+        cyclecloud.mounts.shared.disabled = true
+        cyclecloud.exports.sched.disabled = true
+        cyclecloud.exports.shared.disabled = true
+        cyclecloud.exports.sched.samba.enabled = false
+        cyclecloud.exports.shared.samba.enabled = false
+        cyclecloud.exports.defaults.samba.enabled = false      
+        cshared.server.legacy_links_disabled = true
+        [[[cluster-init cyclecloud/slurm:default]]]
+        Optional = true
+        [[[configuration cyclecloud.mounts.nfs_shared]]]
+        type = nfs
+        mountpoint = /shared
+        export_path = $NFSSharedExportPath
+        address = $NFSAddress
+        options = $NFSSharedMountOptions
+        [[[configuration cyclecloud.mounts.nfs_sched]]]
+        type = nfs
+        mountpoint = /sched
+        [[[configuration cyclecloud.mounts.additional_nfs]]]
+        disabled = ${AdditionalNAS isnt true}
+        type = nfs
+        address = ${ifThenElse(AdditionalNAS, AdditonalNFSAddress, undefined)}
+        mountpoint = ${ifThenElse(AdditionalNAS, AdditionalNFSMountPoint, undefined)}
+        export_path = ${ifThenElse(AdditionalNAS, AdditionalNFSExportPath, undefined)}
+        options = ${ifThenElse(AdditionalNAS, AdditionalNFSMountOptions, undefined)}
+    [[node scheduler]]
+    MachineType = $VMSizeForScheduler
+    IsReturnProxy = $ReturnProxy
+    AdditionalClusterInitSpecs = $ClusterInitSpecsForScheduler
+    ComputerName = ${regexps("([^a-zA-Z0-9-])", ifThenElse(NodeNamePrefix=="Cluster Prefix", StrJoin("-", ClusterName, "scheduler"), ifThenElse(Size(Trim(NodeNamePrefix)) == 0 || NodeNamePrefix == "Generated", undefined, NodeNamePrefix)), "-")}
+        [[[configuration]]]
+        cyclecloud.mounts.nfs_sched.disabled = true
+        cyclecloud.mounts.nfs_shared.disabled = ${NFSType != "External"}
+        [[[cluster-init cyclecloud/slurm:scheduler]]]
+        [[[network-interface eth0]]]
+        AssociatePublicIpAddress = $UsePublicNetwork
+        [[[input-endpoint ganglia]]]
+        PrivatePort = 8652
+        PublicPort = 8652
+        [[[volume sched]]]
+        Size = 30
+        SSD = True
+        Mount = builtinsched
+        Persistent = False
+        [[[volume shared]]]
+        Size = ${ifThenElse(NFSType == "Builtin", FilesystemSize, 2)}
+        SSD = True
+        Mount = builtinshared
+        Persistent = ${NFSType == "Builtin"}
+        [[[configuration cyclecloud.mounts.builtinsched]]]
+        mountpoint = /sched
+        fs_type = xfs
+        [[[configuration cyclecloud.mounts.builtinshared]]]
+        disabled = ${NFSType != "Builtin"}
+        mountpoint = /shared
+        fs_type = xfs
+        [[[configuration cyclecloud.exports.builtinsched]]]
+        export_path = /sched
+        options = no_root_squash
+        samba.enabled = false
+        type = nfs
+        [[[configuration cyclecloud.exports.builtinshared]]]
+        disabled = ${NFSType != "Builtin"}
+        export_path = /shared
+        samba.enabled = false
+        type = nfs
+    [[node nodearraybase]]
+    Abstract = true
+        [[[configuration]]]
+        slurm.autoscale = true
+        slurm.node_prefix = ${ifThenElse(NodeNamePrefix=="Cluster Prefix", StrJoin("-", ClusterName, ""), NodeNamePrefix)}
+        slurm.use_nodename_as_NodeNamePrefix = $NodeNameIsHostName
+        [[[cluster-init cyclecloud/slurm:execute]]]
+        [[[network-interface eth0]]]
+        AssociatePublicIpAddress = $ExecuteNodesArePublic
+    [[nodearray hpc]]
+    Extends = nodearraybase
+    MachineType = $VMSizeForHPC
+    MaxCoreCount = $MaxCoreCountForHPC
+    Azure.MaxScalesetSize = $MaxScalesetSizeForHPC
+    AdditionalClusterInitSpecs = $ClusterInitSpecsForHPC
+        [[[configuration]]]
+        slurm.default_partition = true
+        slurm.hpc = true
+        slurm.partition = hpc
+    [[nodearray htc]]
+    Extends = nodearraybase
+    MachineType = $VMSizeForHTC
+    MaxCoreCount = $MaxCoreCountForHTC
+    Azure.MaxScalesetSize = $MaxScalesetSizeForHTC
+    Interruptible = $SpotVMForHTC
+    MaxPrice = $SpotMaxPriceForHTC
+    AdditionalClusterInitSpecs = $ClusterInitSpecsForHTC
+        [[[configuration]]]
+        slurm.hpc = false
+        slurm.partition = htc
