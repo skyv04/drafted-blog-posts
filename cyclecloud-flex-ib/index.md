@@ -41,7 +41,7 @@ fi
 
 ### II. 1. CycleCloud Host VM Deployment Steps
 
-1 - Creation of the Resource Group: The resource group will include the host VM, the VMSS, and all the shared resources (e.g., network, storage, etc.).
+1 - Create the resource group: The resource group will include the host VM, the VMSS, and all the shared resources (e.g., network, storage, etc.).
 
   ```bash
   az group create \
@@ -50,7 +50,7 @@ fi
       --subscription $SUBSCRIPTION
   ```
 
-2 - Provisioning the Virtual Network: This will facilitate network connectivity for your CycleCloud cluster.
+2 - Provision the virtual network: This will facilitate network connectivity for your CycleCloud cluster.
 
   ```bash
   az network vnet create \
@@ -59,7 +59,7 @@ fi
       --resource-group $RG
   ```
 
-3 - Adding a Subnet to the Virtual Network: The default subnet will help with IP address allocation for the host VM and subsequent nodes in the CycleCloud cluster.
+3 - Add a subnet to the virtual network: The default subnet will help with IP address allocation for the host VM and subsequent nodes in the CycleCloud cluster.
 
   ```bash
   az network vnet subnet create \
@@ -69,7 +69,7 @@ fi
     --resource-group $RG
   ```
 
-4 - Creating the CycleCloud Host VM: Set up the CycleCloud host VM, which serves as the control or management node for the cluster.
+4 - Creating the CycleCloud host VM: Set up the CycleCloud host VM, which serves as the control or management node for the cluster.
 
   ```bash
   az vm create \
@@ -88,7 +88,7 @@ fi
     --plan-product "azure-cyclecloud"
   ```
 
-5 - Deploying an Empty VMSS Flex: The CycleCloud cluster will later scale out from within this VMSS using RDMA-enabled VM sizes to ensure InfiniBand connectivity between the nodes.
+5 - Deploy an empty VMSS Flex: The CycleCloud cluster will later scale out from within this VMSS using RDMA-enabled VM sizes to ensure InfiniBand connectivity between the nodes.
 
   ```bash
   az vmss create \
@@ -99,7 +99,7 @@ fi
     --single-placement-group false
   ```
 
-6 - Assigning Contributor Role to the host VM Managed Identity: This grants the necessary permissions allowing the control node to create compute nodes and associated resources.
+6 - Assign contributor role to the host VM managed identity: This grants the necessary permissions allowing the control node to create compute nodes and associated resources.
 
   ```bash
   # Get Host VM Principal ID
@@ -117,7 +117,7 @@ fi
       --scope "/subscriptions/$SUBSCRIPTION"   
   ```
 
-7 - Setting Network Security Group Rules: Enable web access to CycleCloud through the WebUI by defining network security group rules.
+7 - Setup network security group rules: Enable web access to CycleCloud through the WebUI by defining network security group rules.
 
   ```bash
   # Get the NSG Name
@@ -137,7 +137,7 @@ fi
           --priority 107
   ```
 
-8 - Creating the Storage Account: Establish a storage account that will serve as the CycleCloud storage locker, ensuring data persistence and accessibility across the nodes in the cluster.
+8 - Create the storage account: Establish a storage account that will serve as the CycleCloud storage locker, ensuring data persistence and accessibility across the nodes in the cluster.
 
   ```bash
   az storage account create \
@@ -198,7 +198,7 @@ az network bastion ssh \
 
 Now that the environment is prepared, we can proceed with installing and configuring CycleCloud on the CycleCloud host VM. This step lays the foundation for managing and scaling HPC workloads effectively.
 
-1 - Retrieve the public IP of the CycleCloud host VM and install CycleCloud CLI on the host VM:
+1 - Retrieve the public IP of the CycleCloud host VM and install the CycleCloud CLI on the host VM:
 
 ```bash
 az vm show -d \
@@ -221,9 +221,10 @@ unzip cyclecloud-cli.zip && sh cyclecloud-cli-installer/install.sh
 ```
 
 ![Landing Page of CycleCloud WebUI](./assets/image1.png "Image 1")
+Image 1: CycleCloud WebUI Initial Landing Page
 
 
-2 - Configuring an initial account and initializing CyClecloud:
+2 - Configure an initial account and initialize CyCleCloud:
 
 To set up an initial account, you can navigate to the following URL: `https://<REPLACE_WITH_PUBLIC_IP>` from a web browser. This will open up the WebUI and ask to confirm the credential, as shown in Image 1.
 
@@ -232,6 +233,7 @@ Next, you can set up a account, password, and public key (the one used during th
 Once you hit done, close (or leave) the browser window.
 
 ![Initial User Setup from CycleCloud WebUI](./assets/image2.png "Image 2")
+Image 2: Initial User Setup from CycleCloud WebUI
 
 From the host VM terminal, run the command below to initialize CycleCloud:
 
@@ -263,7 +265,7 @@ Follow the prompt, filling out the details as provided in Table 1.
 Table 1: Description of Prompt-Value Pairing During CycleCloud Initialization
 
 
-3 - Adding Storage Account Key to the Config File:
+3 - Add the storage account key to the config file:
 
 The command below will retrieve the storage account key:
 
@@ -289,7 +291,7 @@ The above excerpt can thus be pasted in the config file inside of the host VM by
 vi /home/azureuser/.cycle/config.ini
 ```
 
-4 - Setting up the private key for authentication: 
+4 - Add the private key for authentication: 
 
 To set up the private key in the host VM, use the key associated with the public key from the initial user setup in the WebUI.
 
@@ -304,7 +306,7 @@ mv private-key.pem ~/.ssh/cyclecloud.pem
 chmod 600 ~/.ssh/cyclecloud.pem
 ```
 
-5 - Importing the SLURM template to leverage CycleCloud `StandAlone` allocation method:
+5 - Import the SLURM template to leverage CycleCloud `StandAlone` allocation method:
 
 This will scale out the cluster inside of a Virtual Machine Scale Set (VMSS) in Flexible orchestration mode with InfiniBand connectivity.
 
@@ -329,7 +331,7 @@ wget https://skyv04.github.io/drafted-blog-posts/cyclecloud-flex-ib/assets/Cycle
 
 ## IV. Scaling Out the SLURM Cluster within a VMSS Flex with InfiniBand
 
-1 - Importing the SLURM Template: 
+1 - Import the SLURM template: 
 
 ```bash
 cyclecloud import_cluster myslurm1  -f CycleCloud_FlexIB_SLURM_Template.txt -c slurm -p CycleCloud_FlexIB_SLURM_Parameters.json
@@ -340,7 +342,7 @@ The above command is to be run within the host VM in the directory where the tem
 > :information_source: Before executing the above command, ensure that you modify the parameter file to include all the necessary values. You would replace any missing values that have placeholders starting with `REPLACE_WITH_...` such as the CycleCloud subscription, subnet ID, VMSS Flex ID, etc.
 
 
-2 - Launching the cluster:
+2 - Launch the cluster:
 
 ```bash
 # Start the cluster
@@ -351,7 +353,7 @@ watch cyclecloud show_cluster myslurm1 -l
 
 ```
 
-3 - Adding nodes to the cluster: 
+3 - Add nodes to the cluster: 
 
 ```bash
 cyclecloud add_nodes myslurm1 --template htc --count 1000
@@ -359,7 +361,7 @@ cyclecloud add_nodes myslurm1 --template htc --count 1000
 
 The above command adds a thousand RDMA-enabled nodes to the SLURM cluster in the HTC partition. You would make sure the number of nodes does not exceed the maximum HTC scale out size that was specified in the parameter file.
 
-4 - Monitoring the status of the cluster:
+4 - Monitor the status of the cluster:
 
 In case the `watch` command under point (1 -) above was interrupted or does not show a complete list of the newly added nodes, you might need to re-run it to see the full list of nodes and monitor their provisioning status.
 
