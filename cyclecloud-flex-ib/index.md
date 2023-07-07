@@ -320,11 +320,11 @@ To keep the template minimal, the parameters are in the following separate JSON 
 Alternatively, you could use `wget` to download these files directly on the host VM:
 
 ```bash
-# Donwload the template file
-wget ./assets/CycleCloud_FlexIB_SLURM_Template.txt
+# Download the template file
+wget https://skyv04.github.io/drafted-blog-posts/cyclecloud-flex-ib/assets/CycleCloud_FlexIB_SLURM_Template.txt
 
 # Download the parameter file
-wget ./assets/CycleCloud_FlexIB_SLURM_Parameters.json
+wget https://skyv04.github.io/drafted-blog-posts/cyclecloud-flex-ib/assets/CycleCloud_FlexIB_SLURM_Parameters.json
 ```
 
 ## IV. Scaling Out the SLURM Cluster within a VMSS Flex with InfiniBand
