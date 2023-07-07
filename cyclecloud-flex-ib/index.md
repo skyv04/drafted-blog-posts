@@ -6,7 +6,8 @@ In the world of high-performance computing (HPC), scaling out clusters to meet d
 
 ## II. Setting Up the Environment for CycleCloud Cluster
 
-To begin, let's outline the steps involved in setting up the environment for our CycleCloud SLURM cluster. These steps ensure you have a working CycleCloud VM host before setting up a cluster to leverage InfiniBand with VMSS Flexible.
+It takes about eight steps to set up the environment for the CycleCloud SLURM cluster. These steps ensure you have a working CycleCloud VM host before setting up a cluster to leverage InfiniBand with VMSS Flexible.
+This section introduces the main variables and walks you through each of the eight steps, which include: creating a resource group, creating a virtual network, creating a default subnet, creating a CycleCloud Host VM, assigning a contributor role to the host VM managed identity, setting an NSG rule to allow web requests, creating a VMSS, and creating a storage account. You will also find a few extra steps for creating a Bastion public IP, a Bastion subnet, and a Bastion service to securely SSH into the host VM.
 
 The variables include:
 
@@ -88,18 +89,7 @@ fi
     --plan-product "azure-cyclecloud"
   ```
 
-5 - Deploy an empty VMSS Flex: The CycleCloud cluster will later scale out from within this VMSS using RDMA-enabled VM sizes to ensure InfiniBand connectivity between the nodes.
-
-  ```bash
-  az vmss create \
-    -n "$VMSS_NAME" \
-    -g $RG \
-    --platform-fault-domain-count 1 \
-    --orchestration-mode Flexible \
-    --single-placement-group false
-  ```
-
-6 - Assign contributor role to the host VM managed identity: This grants the necessary permissions allowing the control node to create compute nodes and associated resources.
+5 - Assign contributor role to the host VM managed identity: This grants the necessary permissions allowing the control node to create compute nodes and associated resources.
 
   ```bash
   # Get Host VM Principal ID
@@ -117,7 +107,7 @@ fi
       --scope "/subscriptions/$SUBSCRIPTION"   
   ```
 
-7 - Setup network security group rules: Enable web access to CycleCloud through the WebUI by defining network security group rules.
+6 - Setup network security group rules: Enable web access to CycleCloud through the WebUI by defining network security group rules.
 
   ```bash
   # Get the NSG Name
@@ -135,6 +125,17 @@ fi
           --access Allow \
           --protocol Tcp \
           --priority 107
+  ```
+
+7 - Deploy an empty VMSS Flex: The CycleCloud cluster will later scale out from within this VMSS using RDMA-enabled VM sizes to ensure InfiniBand connectivity between the nodes.
+
+  ```bash
+  az vmss create \
+    -n "$VMSS_NAME" \
+    -g $RG \
+    --platform-fault-domain-count 1 \
+    --orchestration-mode Flexible \
+    --single-placement-group false
   ```
 
 8 - Create the storage account: Establish a storage account that will serve as the CycleCloud storage locker, ensuring data persistence and accessibility across the nodes in the cluster.
@@ -254,7 +255,6 @@ Follow the prompt, filling out the details as provided in Table 1.
 | Managed Identity:                               | y                              |
 | Subscription ID:                                | Azure subscription ID          |
 | Default Location:                               | (`$RG`) resource group region  |
-| Azure default region has been set to westus3    |                                |
 | Resource Group:                                 | Value of the `$RG` variable    |
 | Storage Account:                                | Value of `$STORAGE_ACCOUNT`    |
 | Use storage account?                            | y                              |
