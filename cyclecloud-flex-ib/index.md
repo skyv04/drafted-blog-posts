@@ -380,7 +380,7 @@ sbatch myjob.sh
 
 This too will scale out the HTC partition to a 1000 InfiniBand-connected nodes. It is also reflective of the actual usage scenario you would commonly encounter.
 
-## Conclusion
+## V. Conclusion
 
 Scaling out a CycleCloud SLURM cluster with InfiniBand connectivity using Azure VMSS Flex provides a robust solution for handling demanding HPC workloads. By leveraging the flexibility of VMSS and the performance benefits of InfiniBand, HPC developers, scientists, and technical experts can achieve unprecedented scalability, deployment performance, and reliability.
 
