@@ -1,10 +1,10 @@
 # Leveraging Azure CycleCloud to Scale HPC Workloads with Over a Thousand InfiniBand-Connected Nodes
 
-## I. Introduction
+## Section 1 - Introduction
 
 In the world of high-performance computing (HPC), scaling out clusters to meet demanding computational needs is a crucial aspect. Azure CycleCloud, a cloud-based HPC management solution, provides a powerful platform for orchestrating and scaling HPC workloads. In this blog post, we will explore how to scale out a CycleCloud SLURM cluster on Azure VMSS Flex, leveraging InfiniBand connectivity. This configuration not only enhances scalability but also improves deployment performance and reliability, making it an ideal choice for embarrasingly parallel HPC and AI worloads.
 
-## II. Setting Up the Environment for CycleCloud Cluster
+## Section 2 - Setting Up the Environment for CycleCloud Cluster
 
 It takes about eight steps to set up the environment for a CycleCloud cluster. These steps ensure you have a working CycleCloud VM host before setting up a cluster to leverage InfiniBand with VMSS Flexible.
 This section introduces the main variables and walks you through each of the eight steps, which include: creating a resource group, creating a virtual network, creating a default subnet, creating a CycleCloud Host VM, assigning a contributor role to the host VM managed identity, setting an NSG rule to allow web requests, creating a VMSS, and creating a storage account. You will also find a few extra steps for creating a Bastion public IP, a Bastion subnet, and a Bastion service to securely SSH into the host VM.
@@ -40,7 +40,7 @@ if [ -z "$2" ]; then
 fi
 ```
 
-### II. 1. CycleCloud Host VM Deployment Steps
+### Section 2.1 - CycleCloud Host VM Deployment Steps
 
 1 - Create the resource group: The resource group will include the host VM, the VMSS, and all the shared resources (e.g., network, storage, etc.).
 
@@ -147,7 +147,7 @@ fi
           --sku Standard_LRS
   ```
 
-### II. 2. Accessing the Host VM Securely through Bastion Service
+### Section 2.2 - Accessing the Host VM Securely through Bastion Service
 
 To ensure secure access to the CycleCloud host VM terminal, we'll deploy a bastion service. This service enables convenient and protected SSH connectivity to the host VM, without the need for a public IP address or VPN connection.
 
@@ -195,7 +195,7 @@ az network bastion ssh \
   --ssh-key "/path/to/.ssh/id_rsa.pem"
 ```
 
-## III. Installing and Configuring CycleCloud
+## Section 3 - Installing and Configuring CycleCloud
 
 Now that the environment is prepared, we can proceed with installing and configuring CycleCloud on the CycleCloud host VM. This step lays the foundation for managing and scaling HPC workloads effectively.
 
@@ -329,7 +329,7 @@ wget https://skyv04.github.io/drafted-blog-posts/cyclecloud-flex-ib/assets/Cycle
 wget https://skyv04.github.io/drafted-blog-posts/cyclecloud-flex-ib/assets/CycleCloud_FlexIB_SLURM_Parameters.json
 ```
 
-## IV. Scaling Out the SLURM Cluster within a VMSS Flex with InfiniBand
+## Section 4 - Scaling Out the SLURM Cluster within a VMSS Flex with InfiniBand
 
 1 - Import the SLURM template: 
 
@@ -382,7 +382,7 @@ sbatch myjob.sh
 
 This too will scale out the HTC partition to a 1000 InfiniBand-connected nodes. It is also reflective of the actual usage scenario you would commonly encounter.
 
-## V. Conclusion
+## Section 5 - Conclusion
 
 Scaling out a CycleCloud SLURM cluster with InfiniBand connectivity using Azure VMSS Flex provides a robust solution for handling demanding HPC workloads. By leveraging the flexibility of VMSS and the performance benefits of InfiniBand, HPC developers, scientists, and technical experts can achieve unprecedented scalability, deployment performance, and reliability.
 
