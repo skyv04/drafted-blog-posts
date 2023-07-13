@@ -13,7 +13,7 @@
 
 In the world of high-performance computing (HPC), scaling out clusters to meet demanding computational needs is a crucial aspect. Azure CycleCloud, a cloud-based HPC management solution, provides a powerful platform for orchestrating and scaling HPC workloads. In this blog post, we will explore how to scale out a CycleCloud SLURM cluster on Azure VMSS Flex, leveraging InfiniBand connectivity. This configuration not only enhances scalability but also improves deployment performance and reliability, making it an ideal choice for embarrasingly parallel HPC and AI worloads.
 
-The next sections provide a step-by-step explanation on how to set up the environment for CycleCloud, how to configure CycleCloud, and how to scale out CycleCloud into a VMSS Flex + IB.
+The next sections provide a step-by-step explanation on how to set up the environment for CycleCloud, how to configure CycleCloud, and how to scale out CycleCloud into a VMSS Flex with InfiniBand.
 
 ## Section 2 - Setting Up the Environment for CycleCloud Cluster
 
