@@ -4,7 +4,7 @@
 
 - [Section 1 - Introduction](#section-1---introduction)
 - [Section 2 - Pre-requisites](#section-2---pre-requisites)
-    - [Section 2.1 - Create an empty VMSS Flex scale set](#section-21---create-an-empty-vmss-flex-scale-set)
+    - [Section 2.1 - Create an Empty VMSS Flex Scale Set](#section-21---create-an-empty-vmss-flex-scale-set)
     - [Section 2.2 - Set Up Additional Settings in WebUI](#section-22---set-up-additional-settings-in-webui)
 - [Section 3 - Conclusion](#section-3---conclusion)
 
@@ -21,7 +21,7 @@ Before proceeding with the scaling process, ensure you meet the following pre-re
 
 If you do not have an existing CycleCloud cluster or access to the WebUI, don't worry! We've got you covered. Check out our guide on [how to set up a CycleCloud cluster with up to a thousand InfiniBand-nodes from scratch](../cyclecloud-flex-ib/) to get started.
 
-## Section 2.1 - Create an empty VMSS Flex scale set
+## Section 2.1 - Create an Empty VMSS Flex Scale Set
 
 To begin, create an empty VMSS Flex scale set within the resource group hosting the cluster resources. Use the Azure CLI command below to create the scale set:
 
