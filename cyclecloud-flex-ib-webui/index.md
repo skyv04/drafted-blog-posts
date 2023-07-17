@@ -1,4 +1,4 @@
-# Using the WebUI to Scale CycleCloud Clusters to Reach a Thousand InfiniBand-Connected Nodes
+# Using the WebUI to Scale CycleCloud Clusters to a Thousand InfiniBand-Connected Nodes
 
 ## Outline
 

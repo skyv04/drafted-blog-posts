@@ -1,4 +1,4 @@
-# Leveraging Azure CycleCloud to Scale HPC Workloads with Over a Thousand InfiniBand-Connected Nodes
+# Leveraging Azure CycleCloud to Scale HPC Workloads to a Thousand InfiniBand-Connected Nodes
 
 ## Outline
 
