@@ -23,7 +23,7 @@ If you do not have an existing CycleCloud cluster or access to the WebUI, don't 
 
 ## Section 2.1 - Create an empty VMSS Flex scale set
 
-To begin, create an empty VMSS (Virtual Machine Scale Set) Flex scale set within the resource group hosting the cluster resources. Use the Azure CLI command below to create the scale set:
+To begin, create an empty VMSS Flex scale set within the resource group hosting the cluster resources. Use the Azure CLI command below to create the scale set:
 
 ```bash
 az vmss create \
