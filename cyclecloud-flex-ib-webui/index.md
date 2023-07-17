@@ -2,11 +2,11 @@
 
 ## Outline
 
-[Section 1 - Introduction](#section-1---introduction)
-[Section 2 - Pre-requisites](#section-2---pre-requisites)
-   [Section 2.1 - Create an empty VMSS Flex scale set](#section-2.1---create-an-empty-vmss-flex-scale-set)
-   [Section 2.2 - Set Up Additional Settings in WebUI](#section-2.2---set-up-additional-settings-in-webui)
-[Section 3 - Conclusion](#section-3---conclusion)
+- [Section 1 - Introduction](#section-1---introduction)
+- [Section 2 - Pre-requisites](#section-2---pre-requisites)
+    - [Section 2.1 - Create an empty VMSS Flex scale set](#section-2.1---create-an-empty-vmss-flex-scale-set)
+    - [Section 2.2 - Set Up Additional Settings in WebUI](#section-2.2---set-up-additional-settings-in-webui)
+- [Section 3 - Conclusion](#section-3---conclusion)
 
 ## Section 1 - Introduction
 
