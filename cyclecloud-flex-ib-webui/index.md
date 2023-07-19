@@ -19,7 +19,7 @@ Before proceeding with the scaling process, ensure you meet the following pre-re
 * An existing CycleCloud cluster.
 * Access to the WebUI, which requires the host VM to have an "allow web requests" Network Security Group (NSG) rule.
 
-If you do not have an existing CycleCloud cluster or access to the WebUI, don't worry! We've got you covered. Check out our guide on [how to set up a CycleCloud cluster with up to a thousand InfiniBand-nodes from scratch](../cyclecloud-flex-ib/) to get started.
+If you do not have an existing CycleCloud cluster or access to the WebUI, don't worry! We've got you covered. Check out our guide on [how to set up a CycleCloud cluster to leverage VMSS Flex](../cyclecloud-flex-ib/) to get started.
 
 ## Section 2.1 - Create an Empty VMSS Flex Scale Set
 
@@ -67,4 +67,4 @@ In conclusion, using Azure VMSS Flex to scale CycleCloud clusters with InfiniBan
 
 The combination of CycleCloud's orchestration capabilities, Azure's scalable infrastructure, and InfiniBand's advanced technology opens up new possibilities for efficient large-scale simulations, data analytics, and scientific research. Embracing these solutions empowers organizations to stay at the forefront of HPC, driving remarkable discoveries and breakthroughs.
 
-If you do not meet the pre-requisites or need help setting up a CycleCloud cluster, you can follow this guide to [set up a CycleCloud cluster with up to a thousand InfiniBand-connected nodes from scratch](../cyclecloud-flex-ib/).
+If you do not meet the pre-requisites or need help setting up a CycleCloud cluster, you can follow this guide to [set up a CycleCloud cluster to leverage VMSS Flex](../cyclecloud-flex-ib/).
