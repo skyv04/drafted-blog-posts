@@ -1,4 +1,4 @@
-# CycleCloud Deployment Using Azure Command Line Interface and Cluster Provisioning to Leverage Virtual Machine Scale Sets in Flexible Orchestration Mode
+# Deploying CycleCloud with Az CLI and Provisioning the Cluster to Leverage VMSS Flex
 
 ## Outline
 
