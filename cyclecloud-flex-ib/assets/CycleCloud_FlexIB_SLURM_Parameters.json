@@ -1,7 +1,7 @@
 {
     "Autoscale": true,
     "CycleCloudSubscription": "REPLACE_WITH_CYCLECLOUD_SUBSCRIPTION_NAME_GIVEN_DURING_INITIALIZATION",
-    "LinuxDistro": "CentOS 7",
+    "LinuxDistro": "Alma Linux 8",
     "SubnetId": "REPLACE_WITH_RESOURCE_GROUP_NAME/REPLACE_WITH_RESOURCE_GROUP_NAME-vnet/default",
     "Region": "REPLACE_WITH_REGION_IN_WHICH_RESOURCE_GROUP_WAS_CREATED",
     "KeyPairLocation": "~/.ssh/cyclecloud.pem",
