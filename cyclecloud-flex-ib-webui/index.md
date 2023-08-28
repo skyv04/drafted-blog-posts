@@ -23,7 +23,7 @@ If you do not have an existing CycleCloud cluster or access to the WebUI, don't 
 
 ## Section 2.1 - Create an Empty VMSS Flex Scale Set
 
-To begin, create an empty VMSS Flex scale set within the resource group hosting the cluster resources. Use the Azure CLI command below to create the scale set:
+To begin, create an empty VMSS Flex scale set within the resource group hosting the cluster resources. This can either be the same resource group hosting the host VM or a resource group dedicated   Use the Azure CLI command below to create the scale set:
 
 ```bash
 az vmss create \
@@ -36,9 +36,10 @@ az vmss create \
 
 Replace `<vmss_name>` with the desired name for your VMSS and `<rg_name>` with the name of the resource group containing your CycleCloud cluster resources.
 
+
 ## Section 2.2 - Set Up Additional Settings in WebUI
 
-Now, let's configure the HTC (Heterogeneous Compute) partition using the WebUI of your deployed CycleCloud cluster. Follow these steps:
+Now, let's configure the HTC (High Throughput Compute) partition using the WebUI of your deployed CycleCloud cluster. Follow these steps:
 
 1 - Log in to your Azure portal and navigate to your CycleCloud cluster deployment.
 

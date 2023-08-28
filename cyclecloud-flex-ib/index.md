@@ -233,6 +233,7 @@ unzip cyclecloud-cli.zip && sh cyclecloud-cli-installer/install.sh
 ```
 
 ![Landing Page of CycleCloud WebUI](./assets/image1.png "Image 1")
+
 Image 1: CycleCloud WebUI Initial Landing Page
 
 
@@ -245,6 +246,7 @@ Next, you can set up a account, password, and public key (the one used during th
 Once you hit done, close (or leave) the browser window.
 
 ![Initial User Setup from CycleCloud WebUI](./assets/image2.png "Image 2")
+
 Image 2: Initial User Setup from CycleCloud WebUI
 
 From the host VM terminal, run the command below to initialize CycleCloud:
